@@ -3,6 +3,7 @@ import random
 import copy
 import bisect
 from scipy.stats import wasserstein_distance
+from utils import turnbull
 
 class decisionTree:
 
@@ -50,7 +51,7 @@ class decisionTree:
 
 class buildDecisionTree:
 
-    def __init__(self, data, num_categories = 100, num_price_bins = 100, is_discrete = [True, True, True, False, False, False, False, False, False, False]):
+    def __init__(self, data, second_price_auction = True, num_categories = 100, num_price_bins = 100, is_discrete = [True, True, True, False, False, False, False, False, False, False]):
         '''
         Input type:
             data(list): Training data
@@ -64,6 +65,7 @@ class buildDecisionTree:
         '''
         self.root = None
         self.data = data
+        self.second_price_auction = second_price_auction
         self.flatten_data = [k[-1] + k[:-1] for k in data]
         self.attributes_size = len(data[0][-1])
         self.num_categories = num_categories
@@ -266,6 +268,12 @@ class buildDecisionTree:
 
 
     def computeDataDistribution(self, data):
+        if self.second_price_auction:
+            return self.computeDataDistributionByKME(data)
+        else:
+            return self.computeDataDistributionByTurnbull(data)
+
+    def computeDataDistributionByKME(self, data):
         '''
         Function to find the PDF distribution of the input data based on price bins in self.price_bins
         TODO: determine whether to use PDF or CDF
@@ -296,6 +304,14 @@ class buildDecisionTree:
         # for i in range(1, len(loseprob)):
         #     dist.append(winprob[i] - winprob[i - 1])
         return dist
+
+
+    def computeDataDistributionByTurnbull(self, data):
+        modified_data = []
+        for k in data:
+            price = k[-2] if k[-3] else k[-1]
+            modified_data.append([price, k[-3]])
+        return turnbull(modified_data, bins = self.price_bins)[1]
 
 
     def computeKLDivergence(self, dist1, dist2, wasserstein):
