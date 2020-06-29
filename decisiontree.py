@@ -2,12 +2,13 @@ import collections
 import random
 import copy
 import bisect
+import time
 from scipy.stats import wasserstein_distance
 from utils import turnbull
 
 class decisionTree:
 
-    def __init__(self, attribute, sc, is_leaf, is_discrete, dist):
+    def __init__(self, attribute, sc, is_leaf, is_discrete, dist, attribute_name = []):
         self.attribute = attribute
         self.sc = sc
         self.left = None
@@ -15,6 +16,7 @@ class decisionTree:
         self.is_leaf = is_leaf
         self.is_discrete = is_discrete
         self.dist = dist
+        self.attribute_name = attribute_name
 
 
     # Print decision tree
@@ -28,11 +30,22 @@ class decisionTree:
             print(prefix + str(self.dist[:3])[:-1] + " ... " + str(self.dist[-3:])[1:])
         else:
             if self.is_discrete:
-                print(prefix + str(self.attribute) + " " + str(self.sc)[:5] + " ... " + str(self.sc)[-3:])
+                str_attribute = self.attribute_name[self.attribute] if self.attribute_name else str(self.attribute)
+                print(prefix + str_attribute + " " + str(self.sc)[:5] + " ... " + str(self.sc)[-3:])
             else:
-                print(prefix + str(self.attribute) + " " + str(self.sc[1])[:5] + " ... " + str(self.sc[1])[-3:])
+                str_attribute = self.attribute_name[self.attribute] if self.attribute_name else str(self.attribute)
+                print(prefix + str_attribute + " " + str(self.sc[1])[:5] + " ... " + str(self.sc[1])[-3:])
             self.left.__printTreeHelper(childrenPrefix + "├── ", childrenPrefix + "│   ")
             self.right.__printTreeHelper(childrenPrefix + "└── ", childrenPrefix + "    ")
+
+    
+    def addAttributeName(self, attribute_name):
+        self.attribute_name = attribute_name
+        if self.left:
+            self.left.addAttributeName(attribute_name)
+        if self.right:
+            self.right.addAttributeName(attribute_name)
+
 
     def inference(self, data):
         '''
@@ -116,6 +129,14 @@ class buildDecisionTree:
             bins.append(bins[-1] + bin_width)
         return bins
 
+    
+    def changePriceBins(self, min_price, max_price):
+        bin_width = (max_price - min_price) / self.num_price_bins
+        bins = [min_price + bin_width]
+        for _ in range(1, self.num_price_bins - 1):
+            bins.append(bins[-1] + bin_width)
+        self.price_bins = bins
+
 
     def train(self, max_height = 5, min_leaf_size = 100, wasserstein = False):
         '''
@@ -124,7 +145,10 @@ class buildDecisionTree:
 
         Return type: decisionTree
         '''
+        start_time = time.time()
         self.root = self.build(self.flatten_data, 1, max_height, min_leaf_size, wasserstein)
+        end_time = time.time()
+        print("Total training time: " + str(end_time - start_time) + "seconds")
         return self.root
 
 
@@ -154,7 +178,7 @@ class buildDecisionTree:
             find_or_not(Boolean): Whether we find a best criteria. If False, stop splitting the tree.
             attribute_idx(int): The index of the best attribute. -1 if find_or_not is False
             splittingcriteria:
-                If the attribute is discrete, it is a set whose keys are the possible attribute values and values are 0 or 1
+                If the attribute is discrete, it is a set of keys that are in left child
                 If the attribute is continuous, it is a list of length self.num_attribute_bins[attribute_idx] and the values of this list are 0 or 1
                 0 indicates right child and 1 indicates left child
                 -1 if find_or_not is False
@@ -223,7 +247,7 @@ class buildDecisionTree:
                 not_converge = (left != preleft)
 
             # Decide if split succeed
-            if (len(left) == 0) or (len(left) == len(self.attribute_bins[attribute_idx])):
+            if (len(left) == 0) or (len(left) == len(self.attribute_bins[attribute_idx])) or len(left_data) == 0 or len(right_data) == 0:
                 return False, -1, -1, [], []
 
             kl_div = self.computeKLDivergence(left_distribution, right_distribution, wasserstein)
@@ -260,7 +284,7 @@ class buildDecisionTree:
                 not_converge = (left_or_right != pre_left_or_right)
 
             # Decide if split succeed
-            if all(left_or_right) or (not any(left_or_right)):
+            if all(left_or_right) or (not any(left_or_right)) or len(left_data) == 0 or len(right_data) == 0:
                 return False, -1, -1, [], []
 
             kl_div = self.computeKLDivergence(left_distribution, right_distribution, wasserstein)

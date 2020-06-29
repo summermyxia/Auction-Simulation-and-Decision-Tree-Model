@@ -5,10 +5,6 @@ def turnbull(data, interval_length = float('inf'), bins = [], low_price = 0, hig
         if high_price == -1:
             high_price = max([k[0] for k in data])
         
-        intervals = []
-        for price, win in data:
-            intervals.append((max(price - interval_length, low_price), price) if win else (price, min(price + interval_length, high_price)))
-        
         bins = [low_price]
         bin_width = (high_price - low_price) / num_bins
         for _ in range(num_bins - 1):
@@ -18,6 +14,14 @@ def turnbull(data, interval_length = float('inf'), bins = [], low_price = 0, hig
         num_bins = len(bins) + 1
         low_price = bins[0] * 2 - bins[1]
         high_price = bins[-1] * 2 - bins[-2]
+
+    if len(data) == 0:
+        x = [bins[0] * 2 - bins[1]] + bins
+        return x, [0] * num_bins
+
+    intervals = []
+    for price, win in data:
+        intervals.append((max(price - interval_length, low_price), price) if win else (price, min(price + interval_length, high_price)))
     
     alpha = []
     for left, right in intervals:
