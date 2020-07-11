@@ -10,13 +10,17 @@ class competitor:
         self.bidprice_record = []
 
     def bidprice(self, attributes):
-        price = max(sum([self.attribute_weights[i] * attributes[i] for i in range(self.num_attributes)]) + self.generateNoise() * self.num_attributes, 0)
+        running_bid = self.generateRunningBid()
+        pctr = self.generatePctr(attributes)
+        price = running_bid * pctr
+
+        # price = max(sum([self.attribute_weights[i] * attributes[i] for i in range(self.num_attributes)]) + self.generateNoise() * self.num_attributes, 0)
         if price > self.remaining_budget:
             price = self.remaining_budget
             self.remaining_budget = 0
         else:
             self.remaining_budget -= price
-        self.bidprice_record.append(price)
+        self.bidprice_record.append((price, pctr, running_bid))
         return price
 
     def clearBidPriceRecord(self):
@@ -25,6 +29,13 @@ class competitor:
     # TODO: Add other noise type
     def generateNoise(self):
         return random.random()
+
+    def generatePctr(self, attributes):
+        return sum([self.attribute_weights[i] * attributes[i] for i in range(self.num_attributes)])
+    
+    def generateRunningBid(self, range = 10):
+        return random.random() * range
+
 
 class adExchange:
 
@@ -121,6 +132,32 @@ class adExchange:
         if save:
             self.saveRecord(censored_record, save_path + str(competitor_idx) + ".txt")
         return censored_record
+
+    
+    def getFullInfoOfCompetitor(self, competitor_idx):
+        '''
+        Return type: list of list
+            win or lose: 1 is win, 0 is lose
+            winning_price: -1 if lose
+            bidprice: float
+            attributes: list
+            pctr: float
+            running_bid: float
+        '''
+        if competitor_idx >= self.num_competitors:
+            print("Wrong competitor_idx!")
+            return
+        full_info = []
+        for i in range(len(self.bid_record)):
+            winning_price, winning_id, attributes, competitor_bidprices = self.bid_record[i]
+            price, pctr, running_bid = self.competitors[competitor_idx].bidprice_record[i]
+            if competitor_bidprices[competitor_idx][0] != price:
+                print("Error!")
+            if competitor_idx == winning_id:
+                full_info.append([1, winning_price, competitor_bidprices[competitor_idx][0], attributes, pctr, running_bid])
+            else:
+                full_info.append([0, -1, competitor_bidprices[competitor_idx][0], attributes, pctr, running_bid])
+        return full_info
 
 
     def clearRecord(self):

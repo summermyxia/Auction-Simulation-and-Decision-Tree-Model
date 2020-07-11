@@ -8,7 +8,7 @@ from utils import turnbull
 
 class decisionTree:
 
-    def __init__(self, attribute, sc, is_leaf, is_discrete, dist, attribute_name = []):
+    def __init__(self, attribute, sc, is_leaf, is_discrete, dist, attribute_name = [], data_length = -1):
         self.attribute = attribute
         self.sc = sc
         self.left = None
@@ -17,6 +17,7 @@ class decisionTree:
         self.is_discrete = is_discrete
         self.dist = dist
         self.attribute_name = attribute_name
+        self.data_length = data_length
 
 
     # Print decision tree
@@ -159,12 +160,13 @@ class buildDecisionTree:
         Return type: decisionTree
         '''
         if len(data) < min_leaf_size or current_height == max_height:
-            return decisionTree(-1, -1, True, True, self.computeDataDistribution(data))
+            return decisionTree(-1, -1, True, True, self.computeDataDistribution(data), data_length = 
+            len(data))
         else:
             tf, attribute, sc, left_data, right_data = self.findSplittingCriteria(data, wasserstein)
             if not tf:
-                return decisionTree(-1, -1, True, True, self.computeDataDistribution(data))
-            node = decisionTree(attribute, sc, False, self.is_discrete[attribute], -1)
+                return decisionTree(-1, -1, True, True, self.computeDataDistribution(data), data_length = len(data))
+            node = decisionTree(attribute, sc, False, self.is_discrete[attribute], -1, data_length = len(data))
             node.left = self.build(left_data, current_height + 1, max_height, min_leaf_size, wasserstein)
             node.right = self.build(right_data, current_height + 1, max_height, min_leaf_size, wasserstein)
             return node

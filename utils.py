@@ -1,6 +1,6 @@
 import bisect
 
-def turnbull(data, interval_length = float('inf'), bins = [], low_price = 0, high_price = -1, num_bins = 1000, epsilon = 0.01):
+def turnbull(data, interval_length = float('inf'), bins = [], low_price = 0, high_price = -1, num_bins = 200, epsilon = 0.01):
     if not bins:
         if high_price == -1:
             high_price = max([k[0] for k in data])
