@@ -2,15 +2,16 @@ import random
 
 class competitor:
 
-    def __init__(self, competitor_id, num_attributes, budget = float('inf')):
+    def __init__(self, competitor_id, num_attributes, is_myself = False, budget = float('inf')):
         self.competitor_id = competitor_id
         self.num_attributes = num_attributes
         self.remaining_budget = budget
         self.attribute_weights = [random.random() for _ in range(num_attributes)]
         self.bidprice_record = []
+        self.is_myself = is_myself
 
     def bidprice(self, attributes):
-        running_bid = self.generateRunningBid()
+        running_bid = self.generateRunningBid() if not self.is_myself else self.generateRunningBidSelf()
         pctr = self.generatePctr(attributes)
         price = running_bid * pctr
 
@@ -35,13 +36,16 @@ class competitor:
     
     def generateRunningBid(self, range = 10):
         return random.random() * range
+    
+    def generateRunningBidSelf(self):
+        return random.choice([1, 2] * 20 + [4, 7, 10])
 
 
 class adExchange:
 
     # TODO: Add time attribute
     # num_competitors >= 2
-    def __init__(self, num_competitors = 20, num_integer_attributes = 3, integer_attributes_range = [2, 5, 10], num_float_attributes = 7, float_attributes_range = [], auction_type = 'first'):
+    def __init__(self, num_competitors = 20, num_integer_attributes = 3, integer_attributes_range = [2, 5, 10], num_float_attributes = 7, float_attributes_range = [], auction_type = 'first', myself_idx = -1):
         if len(integer_attributes_range) == 0:
             integer_attributes_range = [4 for _ in range(num_integer_attributes)]
         elif len(integer_attributes_range) != num_integer_attributes:
@@ -61,7 +65,7 @@ class adExchange:
         self.float_attributes_range = float_attributes_range
         self.num_attributes = num_integer_attributes + num_float_attributes
         self.auction_type = auction_type
-        self.competitors = [competitor(i, self.num_attributes) for i in range(num_competitors)]
+        self.competitors = [competitor(i, self.num_attributes) if i != myself_idx else competitor(i, self.num_attributes, is_myself = True) for i in range(self.num_competitors)]
         self.bid_record = []
 
 
